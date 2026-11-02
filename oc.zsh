@@ -1,10 +1,10 @@
 setopt prompt_subst
 autoload -U add-zsh-hook
 
-# Setează binarul implicit la "oc"
+# Binary implicit is "oc"
 zstyle -s ':zsh-oc-prompt:' binary binary || zstyle ':zsh-oc-prompt:' binary "oc"
 
-# Variabile de cache în memorie
+# Cache variable in memory
 typeset -g _OC_CACHED_NOW=""
 typeset -g _OC_AUTH_STATUS=""
 typeset -g _OC_LAST_CHECK=0
@@ -25,7 +25,7 @@ function _zsh_oc_prompt_precmd() {
     kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
     [[ -f "$kubeconfig" ]] || { ZSH_OC_PROMPT=""; return 1; }
 
-    # Detectăm sintaxa corectă pentru comanda stat (Linux GNU vs macOS/BSD)
+    # Detect correct syntax for stat (Linux GNU vs macOS/BSD)
     zstyle -s ':zsh-oc-prompt:' modified_time_fmt modified_time_fmt
     if [[ -z "$modified_time_fmt" ]]; then
         if stat --help >/dev/null 2>&1; then
@@ -36,12 +36,12 @@ function _zsh_oc_prompt_precmd() {
         zstyle ':zsh-oc-prompt:' modified_time_fmt "$modified_time_fmt"
     fi
 
-    # Calculăm timestamp-ul curent al fișierului kubeconfig
+    # Calculate current timestamp of the kubeconfig file
     while read -d ":" config; do
         [[ -n "$config" ]] && now="${now}${config}:$(stat -L $modified_time_fmt "$config" 2>/dev/null)"
     done <<< "${kubeconfig}:"
 
-    # --- CACHE OPTIMIZAT (TTL 5 minute) ---
+    # --- OPTIMIZE CACHE (TTL 5 minute) ---
     if [[ "$_OC_CACHED_NOW" == "$now" && -n "$_OC_AUTH_STATUS" && $(( current_time - _OC_LAST_CHECK )) -lt 300 ]]; then
         if [[ "$_OC_AUTH_STATUS" == "false" ]]; then
             ZSH_OC_PROMPT=""
@@ -52,8 +52,8 @@ function _zsh_oc_prompt_precmd() {
     _OC_CACHED_NOW="$now"
     _OC_LAST_CHECK="$current_time"
 
-    # --- VERIFICARE AUTENTIFICARE CU TIMEOUT DE 3 SECUNDE ---
-    # Detectăm comanda de timeout (Linux coreutils `timeout` sau macOS `gtimeout`)
+    # --- Verify authentication to the cluster with 3 sec timeout ---
+    # Detect timeout command (Linux coreutils `timeout` or macOS `gtimeout`)
     if command -v timeout >/dev/null; then
         timeout_cmd="timeout 3"
     elif command -v gtimeout >/dev/null; then
@@ -62,7 +62,7 @@ function _zsh_oc_prompt_precmd() {
         timeout_cmd=""
     fi
 
-    # Rulăm 'oc whoami' limitat la maxim 3 secunde
+    # Run 'oc whoami' limited to 3 seconds
     if [[ -n "$timeout_cmd" ]]; then
         if ! eval "$timeout_cmd $binary whoami &>/dev/null"; then
             _OC_AUTH_STATUS="false"
@@ -70,7 +70,7 @@ function _zsh_oc_prompt_precmd() {
             return 0
         fi
     else
-        # Fallback dacă nu există utilitarul timeout pe sistem
+        # Fallback if timeout passed
         if ! "$binary" whoami &>/dev/null; then
             _OC_AUTH_STATUS="false"
             ZSH_OC_PROMPT=""
@@ -80,7 +80,7 @@ function _zsh_oc_prompt_precmd() {
 
     _OC_AUTH_STATUS="true"
 
-    # --- Extragere date cluster și namespace ---
+    # --- Extract cluster data and namespace ---
     context="$("$binary" config current-context 2>/dev/null)"
     [[ -z "$context" ]] && { ZSH_OC_PROMPT=""; return 0; }
 
@@ -108,7 +108,7 @@ function _zsh_oc_prompt_precmd() {
         cluster_name=${cluster_name%%.*}
     fi
 
-    # --- LOGICĂ DE CULOARE ---
+    # --- Color Logic ---
     cluster_color="white"
     env_file="$HOME/.oc_clusters"
     if [[ -f "$env_file" ]] && grep -i -q -w "$cluster_name" "$env_file"; then
@@ -119,16 +119,16 @@ function _zsh_oc_prompt_precmd() {
         fi
     else
         fourth_char="${cluster_name:3:1}"
-        if [[ "$fourth_char" == "p" || "$cluster_name" == "crc" ]]; then
+        if [[ "$fourth_char" == "p" ]]; then
             cluster_color="red"
         elif [[ "$fourth_char" == "s" ]]; then
             cluster_color="yellow"
         fi
     fi
 
-    # Formatare finală: Nume cluster colorat | Namespace ALB
+    # Final Prompt - cluster name in color and namespace kept in white
     ZSH_OC_PROMPT="%F{red}⎈%f %F{${cluster_color}}${cluster_name}%f:%F{white}${ns}%f"
 }
 
-# Afișarea în prompt (partea dreaptă - RPS1)
+# Display promt on the right side of the screen (RPS1)
 RPS1='${ZSH_OC_PROMPT} '"$RPS1"
