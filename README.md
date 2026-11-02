@@ -8,4 +8,4 @@ Example: you have 10 OCP clusters. 7 production and 3 staging. In my case the "4
 
 To activate the plugin, add in .zshrc at plugins list ( zsh-oc-prompt ) and restart zsh shell. 
 
-If you are not login to the cluster, no PROMPT will be displayed. If you connect to a cluster it will show in the right side the name of the cluster (in red if it's a production cluster or in orange if it's a staging cluster) and then follow by the namespace name. 
+If you are not login to the cluster, no PROMPT will be displayed. If you connect to a cluster it will show in the right side the name of the cluster (in red if it's a production cluster or in orange if it's a staging cluster or if it's not in the list it will be show the name of the cluster in white) and then follow by the namespace name. 
